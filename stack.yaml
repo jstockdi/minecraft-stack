@@ -11,29 +11,27 @@ Resources:
           ToPort: 22
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
-          FromPort: 25565
-          ToPort: 25565
+          FromPort: 15438
+          ToPort: 15438
           CidrIp: 0.0.0.0/0
-  MinecraftVolume:
-    Type: 'AWS::EC2::Volume'
-    Properties:
-      # AvailabilityZone: !Ref AWS::AvailabilityZone  # Removed - Optional
-      Size: 8  # Adjust size (in GiB) based on your needs
-      VolumeType: gp2  # Adjust volume type (e.g., io1 for higher IOPS)
+        - IpProtocol: tcp
+          FromPort: 42069
+          ToPort: 42069
+          CidrIp: 0.0.0.0/0
+
 
   MinecraftServer:
     Type: 'AWS::EC2::Instance'
     Properties:
-      InstanceType: t4g.small
+      InstanceType: m6i.xlarge
       ImageId: ami-079ea43d31a4fb4d8
-      KeyName: Minecraft Server
+      KeyName: MinecraftKey
       SecurityGroups:
         - Ref: MinecraftSecurityGroup
-      BlockDevices:  # New property for attaching EBS volume
-        - DeviceName: /dev/sda1  # Adjust device name if needed
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
           Ebs:
-            VolumeId: !Ref MinecraftVolume  # Reference the created EBS volume
-            DeleteOnTermination: False  # Set to False to persist the volume
+            VolumeSize: 16 # Size of the EBS volume in GB
 
       UserData:
         Fn::Base64: !Sub |
