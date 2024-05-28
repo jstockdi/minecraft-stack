@@ -2,12 +2,13 @@
 
 INSTALL_DIR=/opt/install
 
+## UPGRADE SYSTEM
 yum update -y
 dnf upgrade --releasever=2023.4.20240513 -y
 
 
+## BOOTSTRAP INSTALL
 mkdir -p $INSTALL_DIR
-
 cd $INSTALL_DIR 
 
 
