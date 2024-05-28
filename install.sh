@@ -35,6 +35,36 @@ echo 'eula=true' > /opt/minecraft/servers/zeldus/eula.txt
 cd /opt/minecraft/servers/zeldus && ln -s /opt/minecraft/jars/server_1.20.6.jar server.jar 
 
 
+cat <<EOF > /etc/systemd/system/zeldus.service
+[Unit]
+Description=Zeldus Server
+After=network.target
+
+[Service]
+User=ec2-user
+Nice=5
+KillMode=none
+SuccessExitStatus=0 1
+InaccessibleDirectories=/root /sys /srv /media -/lost+found
+NoNewPrivileges=true
+WorkingDirectory=/opt/minecraft/servers/zeldus
+ExecStart=$JAVA_HOME/bin/java -Xmx1024M -Xms1024M -jar server.jar nogui
+ExecStop=/bin/kill -SIGINT $MAINPID
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable zeldus.service
+systemctl start zeldus.service
+
+
+
+
+
+
+
 ## PERMISSION CLEANUP
 
 chown -R ec2-user:ec2-user /opt/minecraft /opt/jdk-21.0.3
