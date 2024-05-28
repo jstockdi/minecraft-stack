@@ -33,3 +33,8 @@ curl -s https://piston-data.mojang.com/v1/objects/145ff0858209bcfc164859ba735d41
 mkdir -p /opt/minecraft/servers/zeldus
 echo 'eula=true' > /opt/minecraft/servers/zeldus/eula.txt
 cd /opt/minecraft/servers/zeldus && ln -s /opt/minecraft/jars/server_1.20.6.jar server.jar 
+
+
+## PERMISSION CLEANUP
+
+chown -R ec2-user:ec2-user /opt/minecraft /opt/jdk-21.0.3
