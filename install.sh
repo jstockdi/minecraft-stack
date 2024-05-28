@@ -1,6 +1,6 @@
 #!/bin/bash
 
-IMSTALL_DIR=/opt/install
+INSTALL_DIR=/opt/install
 
 yum update -y
 
