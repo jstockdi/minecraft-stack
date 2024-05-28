@@ -3,6 +3,8 @@
 INSTALL_DIR=/opt/install
 
 yum update -y
+dnf upgrade --releasever=2023.4.20240513 -y
+
 
 mkdir -p $INSTALL_DIR
 
