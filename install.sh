@@ -66,8 +66,8 @@ systemctl start zeldus.service
 
 ## DNS Startup Script
 
-mkdir -p /home/ec2-user/bin
-cat <<EOF > /home/ec2-user/bin/associate_dns
+mkdir -p /root/bin
+cat <<EOF > /root/bin/associate_dns
 INSTANCE_IP=`curl -s http://169.254.169.254/latest/meta-data/public-ipv4`
 
 echo '{ "Comment": "Update the A record set", "Changes": [ { "Action": "UPSERT", "ResourceRecordSet": { "Name": "newzeldus.enderpigs.com", "Type": "A", "TTL": 60, "ResourceRecords": [ { "Value": "'$INSTANCE_IP'" } ] } } ]}' > /tmp/a-record.json
@@ -76,9 +76,9 @@ aws route53 change-resource-record-sets --hosted-zone-id "$ROUTE53_ZONEID" --cha
 done
 EOF
 
+chmod 700 /root/bin/associate_dns
 
-
-
+/root/bin/associate_dns
 
 
 
