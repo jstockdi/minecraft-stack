@@ -1,5 +1,11 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Minecraft Server on AWS EC2'
+
+Parameters:
+  Route53ZoneId:
+    Type: String
+    Description: Value of the Route53 Zone id
+
 Resources:
   MinecraftSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -16,12 +22,46 @@ Resources:
           CidrIp: 0.0.0.0/0
 
 
+  MyRoute53Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com 
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: EnderpigsRoute53UpdaterPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "route53:ChangeResourceRecordSets"
+                Resource: !Join
+                  - ''
+                  - - 'arn:aws:route53:::hostedzone/'
+                    - !Ref Route53ZoneId
+
+              
+  MyInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref MyRoute53Role 
+
   MinecraftServer:
     Type: 'AWS::EC2::Instance'
     Properties:
       InstanceType: m6i.xlarge
       ImageId: ami-079ea43d31a4fb4d8
       KeyName: MinecraftKey
+      IamInstanceProfile: !Ref MyInstanceProfile
+
       SecurityGroups:
         - Ref: MinecraftSecurityGroup
       BlockDeviceMappings:
@@ -32,10 +72,15 @@ Resources:
         - Key: Name
           Value: MinecraftServer
       UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
+        Fn::Base64: 
+          !Sub 
+            - |
+              #!/bin/bash
 
-          /bin/bash -c "$(curl -sSL https://raw.githubusercontent.com/jstockdi/minecraft-stack/main/install.sh)"  
+              export ROUTE53_ZONEID=${Route53ZoneId}
+              /bin/bash -c "$(curl -sSL https://raw.githubusercontent.com/jstockdi/minecraft-stack/main/install.sh)"  
+
+            - Route53ZoneId: !Ref Route53ZoneId
 
 
 
