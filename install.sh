@@ -95,9 +95,6 @@ chmod 700 /root/bin/shutdown
 echo "@reboot  /root/bin shutdown" | crontab
 
 
-cat cron_jobs.txt | grep -v "^$" | crontab -
-
-
 
 ## PERMISSION CLEANUP
 
