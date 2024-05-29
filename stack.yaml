@@ -28,7 +28,9 @@ Resources:
         - DeviceName: /dev/xvda
           Ebs:
             VolumeSize: 16 # Size of the EBS volume in GB
-
+      Tags:
+        - Key: Name
+          Value: MinecraftServer
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
@@ -36,3 +38,82 @@ Resources:
           /bin/bash -c "$(curl -sSL https://raw.githubusercontent.com/jstockdi/minecraft-stack/main/install.sh)"  
 
 
+
+
+  BackupRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: BackupRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: backup.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: BackupPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:PutObject'
+                  - 's3:GetObject'
+                  - 's3:ListBucket'
+                Resource: !Join
+                  - ''
+                  - - 'arn:aws:s3:::'
+                    - !Ref BackupS3Bucket
+                    - '/*'
+
+
+  BackupVault:
+    Type: "AWS::Backup::BackupVault"
+    Properties:
+      BackupVaultName: "MinecraftServerVault"
+
+
+  BackupPlan:
+    Type: AWS::Backup::BackupPlan
+    Properties:
+      BackupPlan:
+        BackupPlanName: MinecraftServerBackupPlan
+        BackupPlanRule:
+          - RuleName: "DailyBackupRule"
+            TargetBackupVault: !Ref BackupVault
+            ScheduleExpression: "cron(0 12 ? * * *)"
+            StartWindowMinutes: 60
+            Lifecycle:
+              DeleteAfterDays: 30
+
+
+  BackupSelection:
+    Type: AWS::Backup::BackupSelection
+    Properties:
+      BackupPlanId: !Ref BackupPlan
+      BackupSelection:
+        IamRoleArn: !GetAtt BackupRole.Arn
+        SelectionName: MinecraftServerBackupSelection
+        Resources:
+          - !Join
+            - ""
+            - - "arn:aws:ec2:"
+              - !Ref AWS::Region
+              - ":"
+              - !Ref AWS::AccountId
+              - ":instance/"
+              - !Ref MinecraftServer
+
+
+
+  BackupS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: jstockdi-minecraft-stack-backup
+
+
+Outputs:
+  MinecraftServerArn:
+    Description: ARN of the Minecraft server EC2 instance
+    Value: !Ref MinecraftServer
