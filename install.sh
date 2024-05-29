@@ -80,6 +80,24 @@ chmod 700 /root/bin/associate_dns
 /root/bin/associate_dns
 
 
+## Shutdown cron
+
+cat <<EOF > /root/bin/shutdown
+
+sleep 14400
+
+/sbin/shutdown -h now
+EOF
+
+chmod 700 /root/bin/shutdown 
+
+
+echo "@reboot  /root/bin shutdown" | crontab
+
+
+cat cron_jobs.txt | grep -v "^$" | crontab -
+
+
 
 ## PERMISSION CLEANUP
 
