@@ -18,7 +18,7 @@ mkdir -p /root/bin
 cat <<EOF > /root/bin/associate_dns
 INSTANCE_IP=\`curl -s checkip.amazonaws.com\`
 
-echo '{ "Comment": "Update the A record set", "Changes": [ { "Action": "UPSERT", "ResourceRecordSet": { "Name": "newzeldus.enderpigs.com", "Type": "A", "TTL": 60, "ResourceRecords": [ { "Value": "'\$INSTANCE_IP'" } ] } } ]}' > /tmp/a-record.json
+echo '{ "Comment": "Update the A record set", "Changes": [ { "Action": "UPSERT", "ResourceRecordSet": { "Name": "$DOMAIN_NAME", "Type": "A", "TTL": 60, "ResourceRecords": [ { "Value": "'\$INSTANCE_IP'" } ] } } ]}' > /tmp/a-record.json
 
 aws route53 change-resource-record-sets --hosted-zone-id "$ROUTE53_ZONEID" --change-batch file:///tmp/a-record.json
 EOF

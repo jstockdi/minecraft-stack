@@ -6,6 +6,10 @@ Parameters:
     Type: String
     Description: Value of the Route53 Zone id
 
+  DomainName:
+      Type: String
+      Description: Domain name of the server
+
 Resources:
   MinecraftSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -78,6 +82,7 @@ Resources:
               #!/bin/bash
 
               export ROUTE53_ZONEID=${Route53ZoneId}
+              export DOMAIN_NAME=${DomainName}
               /bin/bash -c "$(curl -sSL https://raw.githubusercontent.com/jstockdi/minecraft-stack/main/install.sh)"  
 
             - Route53ZoneId: !Ref Route53ZoneId
