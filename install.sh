@@ -87,13 +87,14 @@ After=network.target
 [Service]
 User=ec2-user
 Nice=5
-KillMode=none
+KillMode=control-group
 SuccessExitStatus=0 1
 InaccessibleDirectories=/root /sys /srv /media -/lost+found
 NoNewPrivileges=true
 WorkingDirectory=/opt/minecraft/servers/zeldus
 ExecStart=$JAVA_HOME/bin/java -Xmx1024M -Xms1024M -jar server.jar nogui
 ExecStop=/bin/kill -SIGINT $MAINPID
+ExecStopPost=/bin/kill -SIGKILL $MAINPID
 
 [Install]
 WantedBy=multi-user.target
