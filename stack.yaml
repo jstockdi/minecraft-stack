@@ -62,7 +62,7 @@ Resources:
     Type: 'AWS::EC2::Instance'
     Properties:
       InstanceType: m6i.xlarge
-      ImageId: ami-079ea43d31a4fb4d8
+      ImageId: ami-0341d95f75f311023
       KeyName: MinecraftKey
       IamInstanceProfile: !Ref MinecraftServerInstanceProfile
 
@@ -93,7 +93,7 @@ Resources:
   BackupRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: BackupRole
+      RoleName: !Sub "BackupRole-${AWS::StackName}"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -121,14 +121,14 @@ Resources:
   BackupVault:
     Type: "AWS::Backup::BackupVault"
     Properties:
-      BackupVaultName: "MinecraftServerVault"
+      BackupVaultName: !Sub "MinecraftServerVault-${AWS::StackName}"
 
 
   BackupPlan:
     Type: AWS::Backup::BackupPlan
     Properties:
       BackupPlan:
-        BackupPlanName: MinecraftServerBackupPlan
+        BackupPlanName: !Sub "MinecraftServerBackupPlan-${AWS::StackName}"
         BackupPlanRule:
           - RuleName: "DailyBackupRule"
             TargetBackupVault: !Ref BackupVault
@@ -159,15 +159,13 @@ Resources:
 
   BackupS3Bucket:
     Type: AWS::S3::Bucket
-    Properties:
-      BucketName: jstockdi-minecraft-stack-backup
 
 
  
   ServerStartLambdaFunction:
     Type: 'AWS::Lambda::Function'
     Properties:
-      FunctionName: 'ServerStartGetFunction'
+      FunctionName: !Sub 'ServerStartGetFunction-${AWS::StackName}'
       Handler: 'index.handler'
       Role: 
         Fn::GetAtt:
@@ -244,7 +242,10 @@ Resources:
   ServerStartRestApi:
     Type: 'AWS::ApiGateway::RestApi'
     Properties:
-      Name: 'MinecraftApi'
+      Name: !Sub 'MinecraftApi-${AWS::StackName}'
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
 
   ServerStartGatewayResource:
     Type: 'AWS::ApiGateway::Resource'
@@ -294,24 +295,47 @@ Resources:
       SourceArn:
         Fn::Sub: 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ServerStartRestApi}/*/GET/server'
 
+  # ACM Certificate for custom domain (must be in us-east-1 for API Gateway)
+  ApiCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub 'start.${DomainName}'
+      DomainValidationOptions:
+        - DomainName: !Sub 'start.${DomainName}'
+          HostedZoneId: !Ref Route53ZoneId
+      ValidationMethod: DNS
 
-  # BasePathMapping:
-  #   Type: 'AWS::ApiGateway::BasePathMapping'
-  #   Properties:
-  #     DomainName: 
-  #       Fn::Sub: 'start.${DomainName}'
-  #     RestApiId: !Ref ServerStartRestApi
-  #     Stage: 'prod'
+  # API Gateway Custom Domain Name (must match RestApi endpoint type: REGIONAL)
+  ApiCustomDomain:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      DomainName: !Sub 'start.${DomainName}'
+      RegionalCertificateArn: !Ref ApiCertificate
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      SecurityPolicy: TLS_1_2
 
-  # Route53RecordSet:
-  #   Type: 'AWS::Route53::RecordSet'
-  #   Properties:
-  #     HostedZoneId: !Ref Route53ZoneId
-  #     Name: !Ref DomainName
-  #     Type: 'A'
-  #     AliasTarget:
-  #       DNSName: !Sub 'start.${DomainName}'
-  #       HostedZoneId: !Ref Route53ZoneId
+  # Base Path Mapping
+  ApiBasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      DomainName: !Ref ApiCustomDomain
+      RestApiId: !Ref ServerStartRestApi
+      Stage: prod
+    DependsOn: ServerStartDeployment
+
+  # Route53 record pointing to API Gateway custom domain
+  Route53RecordSet:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref Route53ZoneId
+      Name: !Sub 'start.${DomainName}'
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt ApiCustomDomain.RegionalDomainName
+        HostedZoneId: !GetAtt ApiCustomDomain.RegionalHostedZoneId
+        EvaluateTargetHealth: false
 
 
 Outputs:
@@ -320,6 +344,10 @@ Outputs:
     Value: !Ref MinecraftServer
 
   ApiUrl:
-    Description: "URL of the API endpoint"
-    Value: 
+    Description: "URL of the API endpoint (direct)"
+    Value:
       Fn::Sub: "https://${ServerStartRestApi}.execute-api.${AWS::Region}.amazonaws.com/prod/server"
+
+  CustomDomainUrl:
+    Description: "URL of the custom domain API endpoint"
+    Value: !Sub "https://start.${DomainName}/server"

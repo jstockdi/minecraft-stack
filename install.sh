@@ -55,10 +55,10 @@ crontab <  /root/bin/crontab_entries.txt
 curl -s "https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.tar.gz" > jdk-21_linux-x64_bin.tar.gz 
 tar -xzf jdk-21_linux-x64_bin.tar.gz
 
-rm -rf /opt/jdk-21.0.3
-mv jdk-21.0.3 /opt
+rm -rf /opt/jdk-21.0.8
+mv jdk-21.0.8 /opt
 
-export JAVA_HOME=/opt/jdk-21.0.3
+export JAVA_HOME=/opt/jdk-21.0.8
 echo 'export JAVA_HOME='$JAVA_HOME >> /home/ec2-user/.bashrc
 
 
